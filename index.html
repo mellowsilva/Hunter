@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hunter Hunt - Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1rem;
+        }
+
+        .connection-status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .connected { background: #d4edda; color: #155724; }
+        .connecting { background: #fff3cd; color: #856404; }
+        .disconnected { background: #f8d7da; color: #721c24; }
+
+        .form-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e1e1;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+            background-color: #f9f9f9;
+        }
+
+        input[type="text"]:focus, input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+            background-color: white;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-loading {
+            color: transparent;
+        }
+
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            top: 50%;
+            left: 50%;
+            margin-left: -10px;
+            margin-top: -10px;
+            border: 2px solid transparent;
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .divider {
+            margin: 30px 0;
+            position: relative;
+            text-align: center;
+            color: #999;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e1e1e1;
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 20px;
+        }
+
+        .login-options {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn-host {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            flex: 1;
+        }
+
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 30px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 5px;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            color: #666;
+        }
+
+        .auth-tab.active {
+            background: white;
+            color: #333;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .game-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            text-align: left;
+        }
+
+        .game-info h3 {
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .game-info ul {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .game-info li {
+            margin-bottom: 5px;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            border-left-color: #f5c6cb;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            border-left-color: #c3e6cb;
+        }
+
+        .info-message {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left-color: #bee5eb;
+        }
+
+        .user-profile {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .user-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                margin: 20px;
+                padding: 30px 20px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .logo {
+                font-size: 2rem;
+            }
+
+            .login-options {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">🎯</div>
+        <h1>Hunter Hunt</h1>
+        <p class="subtitle">Multiplayer Social Deduction Game</p>
+
+        <!-- Connection Status -->
+        <div id="connection-status" class="connection-status connected">
+            🟢 Ready to Play
+        </div>
+
+        <!-- Message Container -->
+        <div id="message-container"></div>
+
+        <!-- User Profile (if logged in) -->
+        <div id="user-profile" class="user-profile hidden">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="font-size: 1.5em;">👤</div>
+                <div>
+                    <div style="font-weight: 600;" id="profile-username">Username</div>
+                    <div style="font-size: 0.9em; color: #666;">Player Account</div>
+                </div>
+            </div>
+            <div class="user-stats">
+                <span>Games: <strong id="profile-games">0</strong></span>
+                <span>Wins: <strong id="profile-wins">0</strong></span>
+                <span>Win Rate: <strong id="profile-winrate">0%</strong></span>
+            </div>
+        </div>
+
+        <!-- Auth Tabs -->
+        <div class="auth-tabs">
+            <div class="auth-tab active" id="login-tab" onclick="switchTab('login')">Login</div>
+            <div class="auth-tab" id="signup-tab" onclick="switchTab('signup')">Sign Up</div>
+        </div>
+
+        <!-- Login Form -->
+        <form id="login-form">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" placeholder="Enter your username" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Enter your password" required>
+            </div>
+
+            <button type="submit" class="btn" id="login-btn">Login</button>
+        </form>
+
+        <!-- Signup Form -->
+        <form id="signup-form" class="hidden">
+            <div class="form-group">
+                <label for="signup-username">Username</label>
+                <input type="text" id="signup-username" name="username" placeholder="Choose a username" required minlength="3">
+            </div>
+
+            <div class="form-group">
+                <label for="signup-password">Password</label>
+                <input type="password" id="signup-password" name="password" placeholder="Create a password (min 6 chars)" required minlength="6">
+            </div>
+
+            <div class="form-group">
+                <label for="signup-confirm-password">Confirm Password</label>
+                <input type="password" id="signup-confirm-password" name="confirm-password" placeholder="Confirm your password" required minlength="6">
+            </div>
+
+            <button type="submit" class="btn" id="signup-btn">Create Account</button>
+        </form>
+
+        <div class="divider">
+            <span>Quick Play</span>
+        </div>
+
+        <div class="login-options">
+            <button class="btn btn-host" onclick="quickHost()">🎮 Host Game</button>
+        </div>
+
+        <!-- Logged In Actions -->
+        <div id="logged-in-actions" class="hidden">
+            <button class="btn btn-host" onclick="startHostGame()">🎮 Host New Game</button>
+            <button class="btn" onclick="joinGame()">🎯 Join Game</button>
+            <button class="btn" onclick="logout()" style="background: #dc3545;">🚪 Logout</button>
+        </div>
+
+        <div class="game-info">
+            <h3>🎮 How to Play</h3>
+            <ul>
+                <li><strong>7 Players:</strong> 3 Civilians, 1 Doctor, 1 Police, 2 Hunters</li>
+                <li><strong>Day Phase:</strong> Discuss and vote to eliminate hunters</li>
+                <li><strong>Night Phase:</strong> Hunters attack, civilians can block</li>
+                <li><strong>Special Roles:</strong> Doctor revives, Police investigates</li>
+                <li><strong>Goal:</strong> Civilians eliminate hunters, Hunters eliminate civilians</li>
+            </ul>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import Firebase services
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, set, get, update, onValue, serverTimestamp, push } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        // Your Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBgraIq4rCap0BPdncQfnzlaZVuWaF4HYc",
+            authDomain: "hunters-5e4d4.firebaseapp.com",
+            databaseURL: "https://hunters-5e4d4-default-rtdb.firebaseio.com",
+            projectId: "hunters-5e4d4",
+            storageBucket: "hunters-5e4d4.firebasestorage.app",
+            messagingSenderId: "633468987519",
+            appId: "1:633468987519:web:7c8cfde02359264b6ef74a"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        let currentUser = null;
+        let currentTab = 'login';
+
+        // Initialize Firebase and check connection
+        async function initializeFirebase() {
+            try {
+                // Test database connection
+                const testRef = ref(database, '.info/connected');
+                onValue(testRef, (snapshot) => {
+                    if (snapshot.val() === true) {
+                        updateConnectionStatus('connected');
+                    } else {
+                        updateConnectionStatus('disconnected');
+                    }
+                });
+
+                console.log('Firebase connected successfully');
+            } catch (error) {
+                console.error('Firebase initialization error:', error);
+                updateConnectionStatus('disconnected');
+                showMessage('Connection failed: ' + error.message, 'error');
+            }
+        }
+
+        // Update connection status
+        function updateConnectionStatus(status) {
+            const statusEl = document.getElementById('connection-status');
+            statusEl.className = `connection-status ${status}`;
+            
+            switch (status) {
+                case 'connected':
+                    statusEl.textContent = '🟢 Ready to Play';
+                    break;
+                case 'connecting':
+                    statusEl.textContent = '🟡 Connecting...';
+                    break;
+                case 'disconnected':
+                    statusEl.textContent = '🔴 Connection Lost';
+                    break;
+            }
+        }
+
+        // Show message
+        function showMessage(message, type = 'error') {
+            const container = document.getElementById('message-container');
+            container.innerHTML = `<div class="${type}-message message">${message}</div>`;
+            
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+
+        // Switch between login and signup tabs
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // Update tab appearance
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(tab + '-tab').classList.add('active');
+            
+            // Show/hide forms
+            if (tab === 'login') {
+                document.getElementById('login-form').classList.remove('hidden');
+                document.getElementById('signup-form').classList.add('hidden');
+            } else {
+                document.getElementById('login-form').classList.add('hidden');
+                document.getElementById('signup-form').classList.remove('hidden');
+            }
+        }
+
+        // Handle user login
+        async function handleUserLogin(userData) {
+            currentUser = userData;
+            
+            try {
+                // Update last login
+                const userRef = ref(database, `users/${userData.username}`);
+                await update(userRef, { 
+                    lastLogin: serverTimestamp(),
+                    isOnline: true 
+                });
+
+                // Update UI
+                showUserProfile(userData);
+                showMessage(`Welcome back, ${userData.username}!`, 'success');
+
+            } catch (error) {
+                console.error('Error updating user data:', error);
+                // Still show profile even if update fails
+                showUserProfile(userData);
+                showMessage(`Welcome back, ${userData.username}!`, 'success');
+            }
+        }
+
+        // Handle user logout
+        async function handleUserLogout() {
+            if (currentUser) {
+                try {
+                    // Update online status
+                    const userRef = ref(database, `users/${currentUser.username}`);
+                    await update(userRef, { isOnline: false });
+                } catch (error) {
+                    console.error('Error updating logout status:', error);
+                }
+            }
+            
+            currentUser = null;
+            hideUserProfile();
+            localStorage.removeItem('hunterHuntUser');
+        }
+
+        // Show user profile
+        function showUserProfile(userData) {
+            document.getElementById('profile-username').textContent = userData.username;
+            document.getElementById('profile-games').textContent = userData.gamesPlayed || 0;
+            document.getElementById('profile-wins').textContent = userData.gamesWon || 0;
+            
+            const winRate = userData.gamesPlayed > 0 ? 
+                Math.round((userData.gamesWon / userData.gamesPlayed) * 100) : 0;
+            document.getElementById('profile-winrate').textContent = winRate + '%';
+
+            // Show/hide UI elements
+            document.getElementById('user-profile').classList.remove('hidden');
+            document.getElementById('logged-in-actions').classList.remove('hidden');
+            document.querySelector('.auth-tabs').classList.add('hidden');
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('signup-form').classList.add('hidden');
+            document.querySelector('.divider').classList.add('hidden');
+            document.querySelector('.login-options').classList.add('hidden');
+        }
+
+        // Hide user profile
+        function hideUserProfile() {
+            document.getElementById('user-profile').classList.add('hidden');
+            document.getElementById('logged-in-actions').classList.add('hidden');
+            document.querySelector('.auth-tabs').classList.remove('hidden');
+            document.getElementById('login-form').classList.remove('hidden');
+            document.querySelector('.divider').classList.remove('hidden');
+            document.querySelector('.login-options').classList.remove('hidden');
+        }
+
+        // Login form handler
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('login-btn');
+
+            if (!username || !password) {
+                showMessage('Please enter both username and password', 'error');
+                return;
+            }
+
+            loginBtn.disabled = true;
+            loginBtn.classList.add('btn-loading');
+
+            try {
+                // Check if user exists
+                const userRef = ref(database, `users/${username}`);
+                const snapshot = await get(userRef);
+                
+                if (snapshot.exists()) {
+                    const userData = snapshot.val();
+                    
+                    // Check password (in real app, this should be hashed)
+                    if (userData.password === password) {
+                        // Store user session
+                        localStorage.setItem('hunterHuntUser', JSON.stringify(userData));
+                        await handleUserLogin(userData);
+                    } else {
+                        showMessage('Incorrect password', 'error');
+                    }
+                } else {
+                    showMessage('Username not found', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                showMessage('Login failed: ' + error.message, 'error');
+            }
+
+            loginBtn.disabled = false;
+            loginBtn.classList.remove('btn-loading');
+        });
+
+        // Signup form handler
+        document.getElementById('signup-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('signup-username').value.trim();
+            const password = document.getElementById('signup-password').value;
+            const confirmPassword = document.getElementById('signup-confirm-password').value;
+            const signupBtn = document.getElementById('signup-btn');
+
+            // Validation
+            if (!username || !password || !confirmPassword) {
+                showMessage('Please fill in all fields', 'error');
+                return;
+            }
+
+            if (username.length < 3) {
+                showMessage('Username must be at least 3 characters', 'error');
+                return;
+            }
+
+            if (password.length < 6) {
+                showMessage('Password must be at least 6 characters', 'error');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showMessage('Passwords do not match', 'error');
+                return;
+            }
+
+            signupBtn.disabled = true;
+            signupBtn.classList.add('btn-loading');
+
+            try {
+                // Check if username already exists
+                const userRef = ref(database, `users/${username}`);
+                const snapshot = await get(userRef);
+                
+                if (snapshot.exists()) {
+                    showMessage('Username already taken', 'error');
+                } else {
+                    // Create new user
+                    const newUserData = {
+                        username: username,
+                        password: password, // In real app, hash this
+                        gamesPlayed: 0,
+                        gamesWon: 0,
+                        createdAt: serverTimestamp(),
+                        lastLogin: serverTimestamp(),
+                        isOnline: true
+                    };
+                    
+                    await set(userRef, newUserData);
+                    
+                    // Store user session
+                    localStorage.setItem('hunterHuntUser', JSON.stringify(newUserData));
+                    
+                    showMessage('Account created successfully!', 'success');
+                    await handleUserLogin(newUserData);
+                }
+                
+            } catch (error) {
+                console.error('Signup error:', error);
+                showMessage('Account creation failed: ' + error.message, 'error');
+            }
+
+            signupBtn.disabled = false;
+            signupBtn.classList.remove('btn-loading');
+        });
+
+        // Quick host game
+        async function quickHost() {
+            const username = prompt('Enter your name to host:');
+            if (!username || username.trim().length < 3) {
+                if (username && username.trim().length < 3) {
+                    showMessage('Name must be at least 3 characters', 'error');
+                }
+                return;
+            }
+            
+            try {
+                // Create temporary host session
+                const hostData = {
+                    username: username.trim(),
+                    isTemporary: true,
+                    isHost: true,
+                    sessionId: 'temp_' + Date.now(),
+                    createdAt: serverTimestamp()
+                };
+                
+                // Save temporary session
+                await set(ref(database, `tempSessions/${hostData.sessionId}`), hostData);
+                
+                // Store in localStorage for session persistence
+                localStorage.setItem('hunterHuntSession', JSON.stringify(hostData));
+                
+                showMessage(`Starting as host: ${username}`, 'success');
+                setTimeout(() => {
+                    window.location.href = `game.html?mode=host&session=${hostData.sessionId}`;
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Quick host error:', error);
+                showMessage('Failed to start host session', 'error');
+            }
+        }
+
+        // Start host game (for logged in users)
+        function startHostGame() {
+            if (!currentUser) return;
+            
+            const userData = {
+                username: currentUser.username,
+                isHost: true,
+                isTemporary: false,
+                userId: currentUser.username
+            };
+            
+            localStorage.setItem('hunterHuntSession', JSON.stringify(userData));
+            window.location.href = `game.html?mode=host&user=${currentUser.username}`;
+        }
+
+        // Join game (for logged in users)
+        function joinGame() {
+            if (!currentUser) return;
+            
+            const userData = {
+                username: currentUser.username,
+                isHost: false,
+                isTemporary: false,
+                userId: currentUser.username
+            };
+            
+            localStorage.setItem('hunterHuntSession', JSON.stringify(userData));
+            window.location.href = `game.html?mode=join&user=${currentUser.username}`;
+        }
+
+        // Logout
+        async function logout() {
+            await handleUserLogout();
+            showMessage('Logged out successfully', 'success');
+            localStorage.removeItem('hunterHuntSession');
+        }
+
+        // Check for existing login on page load
+        function checkExistingLogin() {
+            const savedUser = localStorage.getItem('hunterHuntUser');
+            if (savedUser) {
+                try {
+                    const userData = JSON.parse(savedUser);
+                    handleUserLogin(userData);
+                    return true;
+                } catch (e) {
+                    localStorage.removeItem('hunterHuntUser');
+                }
+            }
+            return false;
+        }
+
+        // Make functions global for onclick handlers
+        window.switchTab = switchTab;
+        window.quickHost = quickHost;
+        window.startHostGame = startHostGame;
+        window.joinGame = joinGame;
+        window.logout = logout;
+
+        // Initialize when page loads
+        window.addEventListener('load', () => {
+            initializeFirebase();
+            
+            if (!checkExistingLogin()) {
+                showMessage('Welcome to Hunter Hunt! Login or create an account to play.', 'info');
+            }
+        });
+
+    </script>
+</body>
+</html>
