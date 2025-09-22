@@ -414,6 +414,9 @@
         <!-- Game Log -->
         <div id="log-section" class="card hidden">
             <h3>Game Events</h3>
+            <div id="latest-death" class="hidden" style="background: #dc3545; color: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: center; font-weight: bold;">
+                <!-- Latest death will appear here -->
+            </div>
             <div id="game-log" class="game-log">
                 <div class="log-entry">
                     <span class="log-time">00:00:00</span>
@@ -474,7 +477,9 @@
             players: {},
             phase: 'waiting',
             dayNumber: 0,
-            gameLog: []
+            gameLog: [],
+            votes: {},
+            currentDay: 0  // Track current day to reset voting
         };
 
         let gameRef = null;
@@ -587,7 +592,21 @@
                 const data = snapshot.val();
                 if (!data) return;
 
-                gameData = data;
+                // Check if day changed (reset voting)
+                if (data.dayNumber && data.dayNumber !== gameData.currentDay) {
+                    gameData.currentDay = data.dayNumber;
+                    player.hasVoted = false;
+                    player.selectedVote = null;
+                    console.log(`New day ${data.dayNumber} - voting reset`);
+                }
+
+                // Check if abilities should be reset
+                if (data.specialAbilities) {
+                    player.abilities.doctor = data.specialAbilities.doctor || false;
+                    player.abilities.police = data.specialAbilities.police || false;
+                }
+
+                gameData = { ...gameData, ...data };
                 updateUI();
                 
                 // Check for role assignment
@@ -598,8 +617,13 @@
                     }
                 }
                 
+                // Update player voting status from server
+                if (data.players[player.id]) {
+                    player.hasVoted = data.players[player.id].hasVoted || false;
+                }
+                
                 // Check for attacks
-                if (data.hunterTarget === player.id && !player.attackTimer) {
+                if (data.hunterTarget === player.id && !player.attackTimer && player.isAlive) {
                     showAttackModal();
                 }
             });
