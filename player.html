@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hunter Hunt - Player</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .game-code {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .player-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .role-display {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+
+        .role-unknown {
+            background: #f8f9fa;
+            color: #6c757d;
+        }
+
+        .role-civilian {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .role-doctor {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .role-police {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .role-hunter {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            margin: 5px;
+            width: 100%;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e1e1;
+            border-radius: 10px;
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .players-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .player-card {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .player-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .player-card.selected {
+            border-color: #dc3545;
+            background: #ffebee;
+        }
+
+        .player-card.dead {
+            opacity: 0.6;
+            background: #f5f5f5;
+        }
+
+        .player-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+
+        .player-status {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .status-alive {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-dead {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-online {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .phase-indicator {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .phase-waiting {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .phase-day {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .phase-night {
+            background: #e8eaf6;
+            color: #3f51b5;
+        }
+
+        .game-log {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 0.9rem;
+        }
+
+        .log-time {
+            color: #6c757d;
+            font-size: 0.8rem;
+            margin-right: 10px;
+        }
+
+        .attack-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(220, 53, 69, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .attack-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .timer {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #dc3545;
+            margin: 20px 0;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 768px) {
+            .player-info {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+
+            .players-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Hunter Hunt</h1>
+            <div class="game-code" id="game-code">Enter Code</div>
+            <div class="player-info">
+                <div>Player: <strong id="player-name">Not Connected</strong></div>
+                <div>Status: <strong id="player-status">Waiting</strong></div>
+                <div>Phase: <strong id="current-phase">Setup</strong></div>
+            </div>
+        </div>
+
+        <!-- Join Game Section -->
+        <div id="join-section" class="card">
+            <h3>Join Game</h3>
+            <input type="text" id="join-code" class="input-field" placeholder="Enter 4-digit game code" maxlength="4">
+            <button class="btn" onclick="joinGame()">Join Game</button>
+        </div>
+
+        <!-- Your Role -->
+        <div id="role-section" class="card hidden">
+            <h3>Your Role</h3>
+            <div id="role-display" class="role-display role-unknown">
+                <div id="role-name">Unknown</div>
+                <div id="role-description">Waiting for game to start...</div>
+            </div>
+        </div>
+
+        <!-- Game Phase -->
+        <div id="phase-section" class="hidden">
+            <div id="phase-indicator" class="phase-indicator phase-waiting">
+                Waiting for players...
+            </div>
+        </div>
+
+        <!-- Day Voting -->
+        <div id="voting-section" class="card hidden">
+            <h3>Day Voting</h3>
+            <p>Vote to eliminate a suspected hunter:</p>
+            <div id="vote-players" class="players-grid">
+                <!-- Vote options will appear here -->
+            </div>
+            <button class="btn btn-danger" id="vote-btn" onclick="castVote()" disabled>Cast Vote</button>
+            <div id="vote-result"></div>
+        </div>
+
+        <!-- Night Actions -->
+        <div id="night-section" class="card hidden">
+            <h3>Night Phase</h3>
+            
+            <!-- Hunter Actions -->
+            <div id="hunter-panel" class="hidden">
+                <p>Choose a target to eliminate:</p>
+                <select id="hunter-target" class="input-field">
+                    <option value="">Select target...</option>
+                </select>
+                <button class="btn btn-danger" onclick="submitHunterTarget()">Submit Target</button>
+                
+                <div style="margin-top: 15px;">
+                    <strong>Other Hunters:</strong>
+                    <div id="other-hunters"></div>
+                </div>
+            </div>
+            
+            <!-- Civilian Night -->
+            <div id="civilian-panel">
+                <p>It's night time. Stay alert for attacks!</p>
+                <div style="text-align: center; font-size: 3rem; margin: 20px 0;">😴</div>
+            </div>
+        </div>
+
+        <!-- Special Abilities -->
+        <div id="abilities-section" class="card hidden">
+            <h3>Special Abilities</h3>
+            
+            <!-- Doctor -->
+            <div id="doctor-panel" class="hidden">
+                <p>Revive one dead player (once per game):</p>
+                <select id="revive-target" class="input-field">
+                    <option value="">Select player to revive...</option>
+                </select>
+                <button class="btn btn-success" onclick="revivePlayer()">Revive Player</button>
+            </div>
+            
+            <!-- Police -->
+            <div id="police-panel" class="hidden">
+                <p>Investigate one player's role (once per game):</p>
+                <select id="investigate-target" class="input-field">
+                    <option value="">Select player to investigate...</option>
+                </select>
+                <button class="btn" onclick="investigatePlayer()">Investigate</button>
+                <div id="investigation-result"></div>
+            </div>
+        </div>
+
+        <!-- Other Players -->
+        <div id="players-section" class="card hidden">
+            <h3>Other Players</h3>
+            <div id="players-list" class="players-grid">
+                <!-- Other players will appear here -->
+            </div>
+        </div>
+
+        <!-- Game Log -->
+        <div id="log-section" class="card hidden">
+            <h3>Game Events</h3>
+            <div id="game-log" class="game-log">
+                <div class="log-entry">
+                    <span class="log-time">00:00:00</span>
+                    Welcome to Hunter Hunt!
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attack Modal -->
+    <div id="attack-modal" class="attack-modal">
+        <div class="attack-content">
+            <h2>You're Under Attack!</h2>
+            <p>A hunter is targeting you!</p>
+            <div class="timer" id="attack-timer">600</div>
+            <p>seconds remaining</p>
+            <button class="btn btn-success" onclick="blockAttack()">Block Attack</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import Firebase
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, set, get, update, onValue, push } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyBgraIq4rCap0BPdncQfnzlaZVuWaF4HYc",
+            authDomain: "hunters-5e4d4.firebaseapp.com",
+            databaseURL: "https://hunters-5e4d4-default-rtdb.firebaseio.com",
+            projectId: "hunters-5e4d4",
+            storageBucket: "hunters-5e4d4.firebasestorage.app",
+            messagingSenderId: "633468987519",
+            appId: "1:633468987519:web:7c8cfde02359264b6ef74a"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Game state
+        let player = {
+            id: null,
+            name: '',
+            role: 'unknown',
+            isAlive: true,
+            hasVoted: false,
+            gameCode: '',
+            selectedVote: null,
+            attackTimer: null,
+            abilities: {
+                doctor: false,
+                police: false
+            }
+        };
+
+        let gameData = {
+            players: {},
+            phase: 'waiting',
+            dayNumber: 0,
+            gameLog: []
+        };
+
+        let gameRef = null;
+
+        // Initialize player
+        function initPlayer() {
+            // Get player info from session or URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const gameCode = urlParams.get('code');
+            
+            // Try to get player info from localStorage
+            const sessionData = localStorage.getItem('hunterHuntSession');
+            if (sessionData) {
+                const session = JSON.parse(sessionData);
+                player.name = session.username;
+                player.id = session.sessionId || generatePlayerId();
+                
+                if (gameCode) {
+                    document.getElementById('join-code').value = gameCode;
+                    joinGame();
+                }
+            }
+        }
+
+        // Generate player ID
+        function generatePlayerId() {
+            return 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+        }
+
+        // Join game
+        async function joinGame() {
+            const gameCode = document.getElementById('join-code').value.trim();
+            
+            if (!gameCode || gameCode.length !== 4) {
+                alert('Please enter a valid 4-digit game code');
+                return;
+            }
+
+            if (!player.name) {
+                player.name = prompt('Enter your name:');
+                if (!player.name) return;
+                player.id = generatePlayerId();
+            }
+
+            try {
+                // Check if game exists
+                gameRef = ref(database, `games/${gameCode}`);
+                const snapshot = await get(gameRef);
+                
+                if (!snapshot.exists()) {
+                    alert('Game not found. Make sure the host created the game.');
+                    return;
+                }
+
+                const game = snapshot.val();
+                
+                // Check if game is full
+                if (Object.keys(game.players || {}).length >= 7) {
+                    alert('Game is full (7 players maximum)');
+                    return;
+                }
+
+                // Check if name is taken
+                const existingPlayers = Object.values(game.players || {});
+                if (existingPlayers.some(p => p.name === player.name)) {
+                    alert('Name already taken in this game');
+                    return;
+                }
+
+                // Add player to game
+                player.gameCode = gameCode;
+                
+                const playerData = {
+                    id: player.id,
+                    name: player.name,
+                    role: 'unknown',
+                    isAlive: true,
+                    isOnline: true,
+                    hasVoted: false,
+                    joinedAt: new Date().toLocaleTimeString()
+                };
+
+                await update(ref(database), {
+                    [`games/${gameCode}/players/${player.id}`]: playerData
+                });
+
+                // Update UI
+                document.getElementById('game-code').textContent = `Game: ${gameCode}`;
+                document.getElementById('player-name').textContent = player.name;
+                document.getElementById('join-section').classList.add('hidden');
+                document.getElementById('role-section').classList.remove('hidden');
+                document.getElementById('phase-section').classList.remove('hidden');
+                document.getElementById('players-section').classList.remove('hidden');
+                document.getElementById('log-section').classList.remove('hidden');
+
+                // Start listening for updates
+                startListening();
+
+            } catch (error) {
+                console.error('Failed to join game:', error);
+                alert('Failed to join game: ' + error.message);
+            }
+        }
+
+        // Start listening for game updates
+        function startListening() {
+            if (!gameRef) return;
+
+            onValue(gameRef, (snapshot) => {
+                const data = snapshot.val();
+                if (!data) return;
+
+                gameData = data;
+                updateUI();
+                
+                // Check for role assignment
+                if (data.players[player.id] && data.players[player.id].role !== 'unknown') {
+                    if (player.role === 'unknown') {
+                        player.role = data.players[player.id].role;
+                        showRole();
+                    }
+                }
+                
+                // Check for attacks
+                if (data.hunterTarget === player.id && !player.attackTimer) {
+                    showAttackModal();
+                }
+            });
+        }
+
+        // Update UI
+        function updateUI() {
+            updatePlayerStatus();
+            updatePhase();
+            updatePlayersList();
+            updateGameLog();
+            updateActions();
+        }
+
+        // Update player status
+        function updatePlayerStatus() {
+            const playerData = gameData.players[player.id];
+            if (playerData) {
+                player.isAlive = playerData.isAlive !== false;
+                document.getElementById('player-status').textContent = 
+                    playerData.isAlive ? 'Alive' : 'Eliminated';
+            }
+        }
+
+        // Update phase
+        function updatePhase() {
+            const phase = gameData.phase || 'waiting';
+            const dayNumber = gameData.dayNumber || 0;
+            
+            document.getElementById('current-phase').textContent = 
+                phase === 'waiting' ? 'Setup' : 
+                phase === 'day' ? `Day ${dayNumber}` : 
+                phase === 'night' ? `Night ${dayNumber}` : phase;
+
+            const indicator = document.getElementById('phase-indicator');
+            indicator.className = `phase-indicator phase-${phase}`;
+            
+            if (phase === 'waiting') {
+                indicator.textContent = 'Waiting for players...';
+            } else if (phase === 'day') {
+                indicator.textContent = `Day ${dayNumber} - Vote to eliminate hunters`;
+            } else if (phase === 'night') {
+                indicator.textContent = `Night ${dayNumber} - Hunters choose targets`;
+            }
+        }
+
+        // Show role
+        function showRole() {
+            const roleDisplay = document.getElementById('role-display');
+            const roleName = document.getElementById('role-name');
+            const roleDesc = document.getElementById('role-description');
+            
+            roleDisplay.className = `role-display role-${player.role}`;
+            roleName.textContent = player.role.toUpperCase();
+            
+            const descriptions = {
+                civilian: 'Work with others to eliminate all hunters. Vote wisely!',
+                doctor: 'You can revive one dead player once during day phase.',
+                police: 'You can investigate one player to learn their role once during day phase.',
+                hunter: 'Eliminate civilians at night. Work with other hunters!'
+            };
+            
+            roleDesc.textContent = descriptions[player.role] || 'Unknown role';
+            
+            // Show role alert
+            alert(`Your role: ${player.role.toUpperCase()}\n\n${descriptions[player.role]}`);
+        }
+
+        // Update players list
+        function updatePlayersList() {
+            const container = document.getElementById('players-list');
+            container.innerHTML = '';
+            
+            Object.values(gameData.players || {}).forEach(p => {
+                if (p.id === player.id) return; // Skip self
+                
+                const card = document.createElement('div');
+                card.className = `player-card ${p.isAlive === false ? 'dead' : ''}`;
+                
+                let roleInfo = '';
+                // Show role if dead or if you're hunter and they're hunter
+                if (p.isAlive === false) {
+                    roleInfo = `<div class="status-badge status-dead">${p.role}</div>`;
+                } else if (player.role === 'hunter' && p.role === 'hunter') {
+                    roleInfo = `<div class="status-badge status-online">Hunter</div>`;
+                }
+                
+                card.innerHTML = `
+                    <div class="player-name">${p.name}</div>
+                    <div class="player-status">${p.isAlive === false ? 'Dead' : 'Alive'}</div>
+                    ${roleInfo}
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+        // Update game log
+        function updateGameLog() {
+            const container = document.getElementById('game-log');
+            container.innerHTML = '';
+            
+            (gameData.gameLog || []).forEach(entry => {
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry';
+                logEntry.innerHTML = `
+                    <span class="log-time">${entry.time}</span>
+                    ${entry.message}
+                `;
+                container.appendChild(logEntry);
+            });
+            
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Update actions based on phase
+        function updateActions() {
+            // Hide all action sections
+            document.getElementById('voting-section').classList.add('hidden');
+            document.getElementById('night-section').classList.add('hidden');
+            document.getElementById('abilities-section').classList.add('hidden');
+            
+            if (!player.isAlive || gameData.phase === 'waiting') return;
+            
+            // Day phase
+            if (gameData.phase === 'day') {
+                showVoting();
+                showDayAbilities();
+            }
+            // Night phase  
+            else if (gameData.phase === 'night') {
+                showNightActions();
+            }
+        }
+
+        // Show voting
+        function showVoting() {
+            document.getElementById('voting-section').classList.remove('hidden');
+            
+            const container = document.getElementById('vote-players');
+            container.innerHTML = '';
+            
+            Object.values(gameData.players || {}).forEach(p => {
+                if (p.id === player.id || p.isAlive === false) return;
+                
+                const card = document.createElement('div');
+                card.className = 'player-card';
+                card.onclick = () => selectVote(p.id);
+                
+                if (player.selectedVote === p.id) {
+                    card.classList.add('selected');
+                }
+                
+                card.innerHTML = `
+                    <div class="player-name">${p.name}</div>
+                    <div class="player-status">Click to vote</div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+        // Select vote
+        function selectVote(playerId) {
+            if (player.hasVoted) return;
+            
+            player.selectedVote = playerId;
+            document.getElementById('vote-btn').disabled = false;
+            showVoting(); // Refresh to show selection
+        }
+
+        // Cast vote
+        async function castVote() {
+            if (!player.selectedVote || player.hasVoted) return;
+            
+            try {
+                await update(ref(database), {
+                    [`games/${player.gameCode}/players/${player.id}/hasVoted`]: true,
+                    [`games/${player.gameCode}/votes/${player.selectedVote}`]: 
+                        (gameData.votes?.[player.selectedVote] || 0) + 1
+                });
+                
+                player.hasVoted = true;
+                document.getElementById('vote-btn').disabled = true;
+                document.getElementById('vote-result').innerHTML = 
+                    '<p style="color: green;">Vote cast successfully!</p>';
+                    
+            } catch (error) {
+                console.error('Failed to vote:', error);
+                alert('Failed to cast vote');
+            }
+        }
+
+        // Show day abilities
+        function showDayAbilities() {
+            if (player.role === 'doctor' && !player.abilities.doctor) {
+                document.getElementById('abilities-section').classList.remove('hidden');
+                document.getElementById('doctor-panel').classList.remove('hidden');
+                updateReviveOptions();
+            } else if (player.role === 'police' && !player.abilities.police) {
+                document.getElementById('abilities-section').classList.remove('hidden');
+                document.getElementById('police-panel').classList.remove('hidden');
+                updateInvestigateOptions();
+            }
+        }
+
+        // Show night actions
+        function showNightActions() {
+            document.getElementById('night-section').classList.remove('hidden');
+            
+            if (player.role === 'hunter') {
+                document.getElementById('hunter-panel').classList.remove('hidden');
+                document.getElementById('civilian-panel').classList.add('hidden');
+                updateHunterOptions();
+                showOtherHunters();
+            } else {
+                document.getElementById('hunter-panel').classList.add('hidden');
+                document.getElementById('civilian-panel').classList.remove('hidden');
+            }
+        }
+
+        // Update hunter options
+        function updateHunterOptions() {
+            const select = document.getElementById('hunter-target');
+            select.innerHTML = '<option value="">Select target...</option>';
+            
+            Object.values(gameData.players || {}).forEach(p => {
+                if (p.isAlive !== false && p.role !== 'hunter') {
+                    const option = document.createElement('option');
+                    option.value = p.id;
+                    option.textContent = p.name;
+                    select.appendChild(option);
+                }
+            });
+        }
+
+        // Show other hunters
+        function showOtherHunters() {
+            const container = document.getElementById('other-hunters');
+            container.innerHTML = '';
+            
+            Object.values(gameData.players || {}).forEach(p => {
+                if (p.role === 'hunter' && p.id !== player.id && p.isAlive !== false) {
+                    const hunterDiv = document.createElement('div');
+                    hunterDiv.style.cssText = 'background: #ffebee; padding: 8px; margin: 5px 0; border-radius: 5px;';
+                    hunterDiv.textContent = `${p.name} (Hunter)`;
+                    container.appendChild(hunterDiv);
+                }
+            });
+        }
+
+        // Submit hunter target
+        async function submitHunterTarget() {
+            const targetId = document.getElementById('hunter-target').value;
+            if (!targetId) {
+                alert('Please select a target');
+                return;
+            }
+            
+            try {
+                await update(ref(database), {
+                    [`games/${player.gameCode}/hunterTarget`]: targetId
+                });
+                
+                alert('Target submitted!');
+                
+            } catch (error) {
+                console.error('Failed to submit target:', error);
+                alert('Failed to submit target');
+            }
+        }
+
+        // Update revive options
+        function updateReviveOptions() {
+            const select = document.getElementById('revive-target');
+            select.innerHTML = '<option value="">Select player to revive...</option>';
+            
+            Object.values(gameData.players || {}).forEach(p => {
+                if (p.isAlive === false) {
+                    const option = document.createElement('option');
+                    option.value = p.id;
+                    option.textContent = p.name;
+                    select.appendChild(option);
+                }
+            });
+        }
+
+        // Revive player
+        async function revivePlayer() {
+            const targetId = document.getElementById('revive-target').value;
+            if (!targetId) {
+                alert('Please select a player to revive');
+                return;
+            }
+            
+            try {
+                await update(ref(database), {
+                    [`games/${player.gameCode}/players/${targetId}/isAlive`]: true,
+                    [`games/${player.gameCode}/specialAbilities/doctor`]: true
+                });
+                
+                player.abilities.doctor = true;
+                alert('Player revived successfully!');
+                document.getElementById('doctor-panel').classList.add('hidden');
+                
+            } catch (error) {
+                console.error('Failed to revive:', error);
+                alert('Failed to revive player');
+            }
+        }
+
+        // Update investigate options
+        function updateInvestigateOptions() {
+            const select = document.getElementById('investigate-target');
+            select.innerHTML = '<option value="">Select player to investigate...</option>';
+            
+            Object.values(gameData.players || {}).forEach(p => {
+                if (p.id !== player.id && p.isAlive !== false) {
+                    const option = document.createElement('option');
+                    option.value = p.id;
+                    option.textContent = p.name;
+                    select.appendChild(option);
+                }
+            });
+        }
+
+        // Investigate player
+        async function investigatePlayer() {
+            const targetId = document.getElementById('investigate-target').value;
+            if (!targetId) {
+                alert('Please select a player to investigate');
+                return;
+            }
+            
+            try {
+                const targetPlayer = gameData.players[targetId];
+                
+                await update(ref(database), {
+                    [`games/${player.gameCode}/specialAbilities/police`]: true
+                });
+                
+                player.abilities.police = true;
+                
+                document.getElementById('investigation-result').innerHTML = 
+                    `<p style="background: #e8f5e8; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                    <strong>Investigation Result:</strong><br>
+                    ${targetPlayer.name} is a <strong>${targetPlayer.role.toUpperCase()}</strong>
+                    </p>`;
+                
+                alert(`Investigation complete! ${targetPlayer.name} is a ${targetPlayer.role}.`);
+                document.getElementById('police-panel').classList.add('hidden');
+                
+            } catch (error) {
+                console.error('Failed to investigate:', error);
+                alert('Failed to investigate player');
+            }
+        }
+
+        // Show attack modal
+        function showAttackModal() {
+            document.getElementById('attack-modal').style.display = 'flex';
+            
+            let timeLeft = 600; // 10 minutes
+            player.attackTimer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('attack-timer').textContent = timeLeft;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(player.attackTimer);
+                    document.getElementById('attack-modal').style.display = 'none';
+                    alert('You failed to block the attack and were eliminated!');
+                    player.attackTimer = null;
+                }
+            }, 1000);
+        }
+
+        // Block attack
+        async function blockAttack() {
+            if (player.attackTimer) {
+                clearInterval(player.attackTimer);
+                player.attackTimer = null;
+            }
+            
+            try {
+                await update(ref(database), {
+                    [`games/${player.gameCode}/attackBlocked`]: true,
+                    [`games/${player.gameCode}/hunterTarget`]: null
+                });
+                
+                document.getElementById('attack-modal').style.display = 'none';
+                alert('Attack blocked successfully! You survived.');
+                
+            } catch (error) {
+                console.error('Failed to block attack:', error);
+                alert('Failed to block attack');
+            }
+        }
+
+        // Make functions global
+        window.joinGame = joinGame;
+        window.castVote = castVote;
+        window.submitHunterTarget = submitHunterTarget;
+        window.revivePlayer = revivePlayer;
+        window.investigatePlayer = investigatePlayer;
+        window.blockAttack = blockAttack;
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            initPlayer();
+        });
+
+        // Handle page unload
+        window.addEventListener('beforeunload', async () => {
+            if (player.attackTimer) {
+                clearInterval(player.attackTimer);
+            }
+            
+            if (player.id && player.gameCode) {
+                try {
+                    await update(ref(database), {
+                        [`games/${player.gameCode}/players/${player.id}/isOnline`]: false
+                    });
+                } catch (error) {
+                    console.error('Failed to update online status:', error);
+                }
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+            
+            switch (e.key.toLowerCase()) {
+                case 'v':
+                    if (gameData.phase === 'day' && !player.hasVoted && player.selectedVote) {
+                        castVote();
+                    }
+                    break;
+                case 'b':
+                    if (document.getElementById('attack-modal').style.display === 'flex') {
+                        blockAttack();
+                    }
+                    break;
+                case 'enter':
+                    if (document.getElementById('join-section').classList.contains('hidden') === false) {
+                        joinGame();
+                    }
+                    break;
+            }
+        });
+
+    </script>
+</body>
+</html>
