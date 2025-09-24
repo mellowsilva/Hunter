@@ -312,6 +312,7 @@
         <!-- Header -->
         <div class="header">
             <h1>Hunter Hunt</h1>
+            <p style="font-size: 0.8rem; color: #666; margin: 0;">by Snehil Tech Corporations</p>
             <div class="game-code" id="game-code">Enter Code</div>
             <div class="player-info">
                 <div>Player: <strong id="player-name">Not Connected</strong></div>
@@ -479,7 +480,9 @@
             dayNumber: 0,
             gameLog: [],
             votes: {},
-            currentDay: 0  // Track current day to reset voting
+            currentDay: 0,  // Track current day to reset voting
+            phaseTimer: null,
+            phaseStartTime: null
         };
 
         let gameRef = null;
@@ -536,36 +539,66 @@
 
                 const game = snapshot.val();
                 
-                // Check if game is full
-                if (Object.keys(game.players || {}).length >= 7) {
-                    alert('Game is full (7 players maximum)');
-                    return;
+                // Check if player is already in this game (rejoin scenario)
+                const existingPlayer = Object.values(game.players || {}).find(p => p.name === player.name);
+                
+                if (existingPlayer) {
+                    // Player is rejoining - use their existing ID and update online status
+                    player.id = existingPlayer.id;
+                    player.role = existingPlayer.role || 'unknown';
+                    player.isAlive = existingPlayer.isAlive !== false;
+                    player.hasVoted = existingPlayer.hasVoted || false;
+                    
+                    console.log(`Rejoining as existing player: ${player.name} (${player.id})`);
+                    
+                    // Update online status
+                    await update(ref(database), {
+                        [`games/${gameCode}/players/${player.id}/isOnline`]: true,
+                        [`games/${gameCode}/gameLog`]: [
+                            ...(game.gameLog || []),
+                            {
+                                time: new Date().toLocaleTimeString(),
+                                message: `${player.name} reconnected to the game`
+                            }
+                        ]
+                    });
+                    
+                } else {
+                    // New player joining
+                    // Check if game is full
+                    if (Object.keys(game.players || {}).length >= 7) {
+                        alert('Game is full (7 players maximum)');
+                        return;
+                    }
+                    
+                    // Add new player to game
+                    const playerData = {
+                        id: player.id,
+                        name: player.name,
+                        role: 'unknown',
+                        isAlive: true,
+                        isOnline: true,
+                        hasVoted: false,
+                        joinedAt: new Date().toLocaleTimeString()
+                    };
+
+                    await update(ref(database), {
+                        [`games/${gameCode}/players/${player.id}`]: playerData,
+                        [`games/${gameCode}/gameLog`]: [
+                            ...(game.gameLog || []),
+                            {
+                                time: new Date().toLocaleTimeString(),
+                                message: `${player.name} joined the game`
+                            }
+                        ]
+                    });
+                    
+                    console.log(`Joined as new player: ${player.name} (${player.id})`);
                 }
 
-                // Check if name is taken
-                const existingPlayers = Object.values(game.players || {});
-                if (existingPlayers.some(p => p.name === player.name)) {
-                    alert('Name already taken in this game');
-                    return;
-                }
-
-                // Add player to game
+                // Set game code and update UI
                 player.gameCode = gameCode;
                 
-                const playerData = {
-                    id: player.id,
-                    name: player.name,
-                    role: 'unknown',
-                    isAlive: true,
-                    isOnline: true,
-                    hasVoted: false,
-                    joinedAt: new Date().toLocaleTimeString()
-                };
-
-                await update(ref(database), {
-                    [`games/${gameCode}/players/${player.id}`]: playerData
-                });
-
                 // Update UI
                 document.getElementById('game-code').textContent = `Game: ${gameCode}`;
                 document.getElementById('player-name').textContent = player.name;
@@ -664,10 +697,65 @@
             if (phase === 'waiting') {
                 indicator.textContent = 'Waiting for players...';
             } else if (phase === 'day') {
-                indicator.textContent = `Day ${dayNumber} - Vote to eliminate hunters`;
+                indicator.innerHTML = `Day ${dayNumber} - Vote to eliminate hunters<br><small>Phase automatically ends at 22:00</small>`;
+                startPhaseTimer('day');
             } else if (phase === 'night') {
-                indicator.textContent = `Night ${dayNumber} - Hunters choose targets`;
+                indicator.innerHTML = `Night ${dayNumber} - Hunters choose targets<br><small>Phase automatically ends at 08:00</small>`;
+                startPhaseTimer('night');
             }
+        }
+
+        // Start automatic phase timer
+        function startPhaseTimer(phase) {
+            // Clear existing timer
+            if (gameData.phaseTimer) {
+                clearInterval(gameData.phaseTimer);
+            }
+            
+            let duration;
+            if (phase === 'day') {
+                // Day: 8 AM to 10 PM (14 hours = 50400 seconds)
+                // For demo purposes, use shorter time (5 minutes = 300 seconds)
+                duration = 300; 
+            } else if (phase === 'night') {
+                // Night: 10 PM to 8 AM (10 hours = 36000 seconds)  
+                // For demo purposes, use shorter time (3 minutes = 180 seconds)
+                duration = 180;
+            }
+            
+            gameData.phaseStartTime = Date.now();
+            
+            // Update timer display every second
+            gameData.phaseTimer = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - gameData.phaseStartTime) / 1000);
+                const remaining = Math.max(0, duration - elapsed);
+                
+                const minutes = Math.floor(remaining / 60);
+                const seconds = remaining % 60;
+                
+                const timerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                // Update phase indicator with timer
+                const indicator = document.getElementById('phase-indicator');
+                if (phase === 'day') {
+                    indicator.innerHTML = `Day ${gameData.dayNumber} - Vote to eliminate hunters<br><small>Time remaining: ${timerText}</small>`;
+                } else if (phase === 'night') {
+                    indicator.innerHTML = `Night ${gameData.dayNumber} - Hunters choose targets<br><small>Time remaining: ${timerText}</small>`;
+                }
+                
+                // Auto-advance phase when timer expires (only if host)
+                if (remaining === 0 && player.isHost) {
+                    clearInterval(gameData.phaseTimer);
+                    autoAdvancePhase();
+                }
+            }, 1000);
+        }
+
+        // Auto-advance phase (for host functionality)
+        async function autoAdvancePhase() {
+            // This would typically be handled by the host
+            // For now, just show notification
+            console.log('Phase timer expired - would auto-advance if host');
         }
 
         // Show role
@@ -724,7 +812,10 @@
         // Update game log
         function updateGameLog() {
             const container = document.getElementById('game-log');
+            const latestDeath = document.getElementById('latest-death');
             container.innerHTML = '';
+            
+            let lastDeathMessage = '';
             
             (gameData.gameLog || []).forEach(entry => {
                 const logEntry = document.createElement('div');
@@ -734,7 +825,20 @@
                     ${entry.message}
                 `;
                 container.appendChild(logEntry);
+                
+                // Check for death messages to display prominently
+                if (entry.message.includes('eliminated') || entry.message.includes('died') || entry.message.includes('was voted out')) {
+                    lastDeathMessage = entry.message;
+                }
             });
+            
+            // Show latest death message prominently at top
+            if (lastDeathMessage) {
+                latestDeath.innerHTML = `💀 ${lastDeathMessage}`;
+                latestDeath.classList.remove('hidden');
+            } else {
+                latestDeath.classList.add('hidden');
+            }
             
             container.scrollTop = container.scrollHeight;
         }
@@ -746,7 +850,9 @@
             document.getElementById('night-section').classList.add('hidden');
             document.getElementById('abilities-section').classList.add('hidden');
             
-            if (!player.isAlive || gameData.phase === 'waiting') return;
+            if (!player.isAlive || gameData.phase === 'waiting' || gameData.phase === 'setup') {
+                return;
+            }
             
             // Day phase
             if (gameData.phase === 'day') {
@@ -766,24 +872,54 @@
             const container = document.getElementById('vote-players');
             container.innerHTML = '';
             
+            // Check if player has already voted this day
+            const playerData = gameData.players[player.id];
+            if (playerData && playerData.hasVoted) {
+                player.hasVoted = true;
+            }
+            
             Object.values(gameData.players || {}).forEach(p => {
                 if (p.id === player.id || p.isAlive === false) return;
                 
                 const card = document.createElement('div');
                 card.className = 'player-card';
-                card.onclick = () => selectVote(p.id);
                 
-                if (player.selectedVote === p.id) {
-                    card.classList.add('selected');
+                // Only allow voting if haven't voted yet
+                if (!player.hasVoted) {
+                    card.onclick = () => selectVote(p.id);
+                    if (player.selectedVote === p.id) {
+                        card.classList.add('selected');
+                    }
+                } else {
+                    card.style.opacity = '0.5';
+                    card.style.cursor = 'not-allowed';
                 }
                 
                 card.innerHTML = `
                     <div class="player-name">${p.name}</div>
-                    <div class="player-status">Click to vote</div>
+                    <div class="player-status">${player.hasVoted ? 'Already voted' : 'Click to vote'}</div>
                 `;
                 
                 container.appendChild(card);
             });
+            
+            // Update vote button
+            const voteBtn = document.getElementById('vote-btn');
+            if (player.hasVoted) {
+                voteBtn.textContent = 'Vote Already Cast';
+                voteBtn.disabled = true;
+            } else {
+                voteBtn.textContent = 'Cast Vote';
+                voteBtn.disabled = !player.selectedVote;
+            }
+            
+            // Show voting status
+            if (player.hasVoted) {
+                const targetName = player.selectedVote ? 
+                    gameData.players[player.selectedVote]?.name : 'someone';
+                document.getElementById('vote-result').innerHTML = 
+                    `<p style="color: green;">✅ You have voted for this day phase.</p>`;
+            }
         }
 
         // Select vote
@@ -1037,8 +1173,13 @@
 
         // Handle page unload
         window.addEventListener('beforeunload', async () => {
+            // Clear timers
             if (player.attackTimer) {
                 clearInterval(player.attackTimer);
+            }
+            
+            if (gameData.phaseTimer) {
+                clearInterval(gameData.phaseTimer);
             }
             
             if (player.id && player.gameCode) {
