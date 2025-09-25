@@ -481,8 +481,7 @@
             gameLog: [],
             votes: {},
             currentDay: 0,  // Track current day to reset voting
-            phaseTimer: null,
-            phaseStartTime: null
+            phaseChecker: null  // Real-time phase checker
         };
 
         let gameRef = null;
@@ -697,65 +696,48 @@
             if (phase === 'waiting') {
                 indicator.textContent = 'Waiting for players...';
             } else if (phase === 'day') {
-                indicator.innerHTML = `Day ${dayNumber} - Vote to eliminate hunters<br><small>Phase automatically ends at 22:00</small>`;
-                startPhaseTimer('day');
+                indicator.innerHTML = `Day ${dayNumber} - Vote to eliminate hunters<br><small>Phase ends at 22:00 (10:00 PM)</small>`;
+                checkPhaseTime();
             } else if (phase === 'night') {
-                indicator.innerHTML = `Night ${dayNumber} - Hunters choose targets<br><small>Phase automatically ends at 08:00</small>`;
-                startPhaseTimer('night');
+                indicator.innerHTML = `Night ${dayNumber} - Hunters choose targets<br><small>Phase ends at 08:00 (8:00 AM)</small>`;
+                checkPhaseTime();
             }
         }
 
-        // Start automatic phase timer
-        function startPhaseTimer(phase) {
-            // Clear existing timer
-            if (gameData.phaseTimer) {
-                clearInterval(gameData.phaseTimer);
+        // Check if phase should change based on real time
+        function checkPhaseTime() {
+            const now = new Date();
+            const currentHour = now.getHours();
+            const phase = gameData.phase;
+            
+            // Check every 30 seconds if phase needs to change
+            if (!gameData.phaseChecker) {
+                gameData.phaseChecker = setInterval(() => {
+                    const checkTime = new Date();
+                    const hour = checkTime.getHours();
+                    
+                    // Day phase should end at 22:00 (10 PM) - switch to night
+                    if (phase === 'day' && hour === 22) {
+                        // Only host should trigger phase change
+                        console.log('Time to switch to night phase (22:00)');
+                        // This would be handled by the host in a real implementation
+                    }
+                    
+                    // Night phase should end at 08:00 (8 AM) - switch to day
+                    if (phase === 'night' && hour === 8) {
+                        // Only host should trigger phase change
+                        console.log('Time to switch to day phase (08:00)');
+                        // This would be handled by the host in a real implementation
+                    }
+                }, 30000); // Check every 30 seconds
             }
-            
-            let duration;
-            if (phase === 'day') {
-                // Day: 8 AM to 10 PM (14 hours = 50400 seconds)
-                // For demo purposes, use shorter time (5 minutes = 300 seconds)
-                duration = 300; 
-            } else if (phase === 'night') {
-                // Night: 10 PM to 8 AM (10 hours = 36000 seconds)  
-                // For demo purposes, use shorter time (3 minutes = 180 seconds)
-                duration = 180;
-            }
-            
-            gameData.phaseStartTime = Date.now();
-            
-            // Update timer display every second
-            gameData.phaseTimer = setInterval(() => {
-                const elapsed = Math.floor((Date.now() - gameData.phaseStartTime) / 1000);
-                const remaining = Math.max(0, duration - elapsed);
-                
-                const minutes = Math.floor(remaining / 60);
-                const seconds = remaining % 60;
-                
-                const timerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                
-                // Update phase indicator with timer
-                const indicator = document.getElementById('phase-indicator');
-                if (phase === 'day') {
-                    indicator.innerHTML = `Day ${gameData.dayNumber} - Vote to eliminate hunters<br><small>Time remaining: ${timerText}</small>`;
-                } else if (phase === 'night') {
-                    indicator.innerHTML = `Night ${gameData.dayNumber} - Hunters choose targets<br><small>Time remaining: ${timerText}</small>`;
-                }
-                
-                // Auto-advance phase when timer expires (only if host)
-                if (remaining === 0 && player.isHost) {
-                    clearInterval(gameData.phaseTimer);
-                    autoAdvancePhase();
-                }
-            }, 1000);
         }
 
         // Auto-advance phase (for host functionality)
         async function autoAdvancePhase() {
-            // This would typically be handled by the host
-            // For now, just show notification
-            console.log('Phase timer expired - would auto-advance if host');
+            // This would typically be handled by the host based on real time
+            // The host would check if it's 22:00 (switch to night) or 08:00 (switch to day)
+            console.log('Phase should change based on real time - host would handle this');
         }
 
         // Show role
@@ -1178,8 +1160,8 @@
                 clearInterval(player.attackTimer);
             }
             
-            if (gameData.phaseTimer) {
-                clearInterval(gameData.phaseTimer);
+            if (gameData.phaseChecker) {
+                clearInterval(gameData.phaseChecker);
             }
             
             if (player.id && player.gameCode) {
